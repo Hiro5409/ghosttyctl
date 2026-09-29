@@ -1,6 +1,6 @@
 import Foundation
 
-struct TerminalSnapshot: Encodable, Equatable, Sendable {
+struct TerminalSnapshot: Encodable, Sendable {
   let windowID: String
   let windowName: String
   let tabID: String
@@ -22,7 +22,7 @@ struct ActionResult: Encodable, Equatable, Sendable {
   let performed: Bool
 }
 
-enum SplitDirection: String, CaseIterable, Sendable {
+enum SplitDirection: String, Sendable {
   case right
   case left
   case down

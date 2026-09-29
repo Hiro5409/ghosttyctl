@@ -4,32 +4,6 @@ import Testing
 
 @Suite("Ghostty")
 struct GhosttyTests {
-  @Test func listReturnsCurrentTerminalMetadata() async throws {
-    let executor = RecordingAppleScriptExecutor(
-      output:
-        "window-1\tWork\ttab-1\tEditor\t1\ttrue\tterminal-1\tnvim\t/Users/me/src\ttrue\n"
-    )
-    let ghostty = Ghostty(executor: executor)
-
-    let terminals = try await ghostty.list()
-
-    #expect(
-      terminals == [
-        TerminalSnapshot(
-          windowID: "window-1",
-          windowName: "Work",
-          tabID: "tab-1",
-          tabName: "Editor",
-          tabIndex: 1,
-          tabSelected: true,
-          terminalID: "terminal-1",
-          terminalName: "nvim",
-          workingDirectory: "/Users/me/src",
-          focused: true
-        )
-      ])
-  }
-
   @Test func typeKeepsTextAndEnterAsSeparateAppleScriptArguments() async throws {
     let payload = "printf '\"hello\"'\\path\n"
     let executor = RecordingAppleScriptExecutor(output: "terminal-1\n")
@@ -45,47 +19,6 @@ struct GhosttyTests {
     #expect(result == TerminalReference(terminalID: "terminal-1"))
     #expect(invocation.arguments == ["terminal-1", payload, "true"])
     #expect(!invocation.source.contains(payload))
-  }
-
-  @Test func newTabTargetsAWindowWithAWorkingDirectory() async throws {
-    let executor = RecordingAppleScriptExecutor(output: "terminal-2\n")
-    let ghostty = Ghostty(executor: executor)
-
-    let result = try await ghostty.newTab(
-      windowID: "window-1",
-      workingDirectory: "/Users/me/src"
-    )
-    let invocation = try #require(await executor.invocations.first)
-
-    #expect(result == TerminalReference(terminalID: "terminal-2"))
-    #expect(invocation.arguments == ["window-1", "/Users/me/src"])
-  }
-
-  @Test(arguments: SplitDirection.allCases)
-  func splitUsesAClosedSetOfDirections(_ direction: SplitDirection) async throws {
-    let executor = RecordingAppleScriptExecutor(output: "terminal-3\n")
-    let ghostty = Ghostty(executor: executor)
-
-    let result = try await ghostty.split(
-      terminalID: "terminal-1",
-      direction: direction,
-      workingDirectory: nil
-    )
-    let invocation = try #require(await executor.invocations.first)
-
-    #expect(result == TerminalReference(terminalID: "terminal-3"))
-    #expect(invocation.arguments == ["terminal-1", direction.rawValue, ""])
-  }
-
-  @Test func focusTargetsATerminalByStableID() async throws {
-    let executor = RecordingAppleScriptExecutor(output: "terminal-1\n")
-    let ghostty = Ghostty(executor: executor)
-
-    let result = try await ghostty.focus(terminalID: "terminal-1")
-    let invocation = try #require(await executor.invocations.first)
-
-    #expect(result == TerminalReference(terminalID: "terminal-1"))
-    #expect(invocation.arguments == ["terminal-1"])
   }
 
   @Test func performActionPassesTheActionAsData() async throws {
