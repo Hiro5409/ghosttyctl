@@ -179,8 +179,9 @@ enum GhosttyScripts {
             else
                 set targetTerminal to first terminal whose id is terminalID
             end if
+            set targetID to id of targetTerminal
             set wasPerformed to perform action actionText on targetTerminal
-            return (id of targetTerminal) & fieldSeparator & (wasPerformed as text)
+            return targetID & fieldSeparator & (wasPerformed as text)
         end tell
     end run
     """#
