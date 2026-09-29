@@ -19,7 +19,15 @@ Commands launch Ghostty in the background when it is not already running. The
 first command that controls Ghostty can trigger the macOS Automation permission
 prompt.
 
-## Install from source
+## Install
+
+Install with Homebrew:
+
+```sh
+brew install Hiro5409/tap/ghosttyctl
+```
+
+### From source
 
 ```sh
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
