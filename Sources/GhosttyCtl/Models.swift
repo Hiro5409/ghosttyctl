@@ -10,6 +10,8 @@ struct TerminalSnapshot: Encodable, Sendable {
   let terminalID: String
   let terminalName: String
   let workingDirectory: String
+  let pid: Int
+  let tty: String
   let focused: Bool
 }
 
@@ -35,7 +37,16 @@ struct GhosttyApplicationNotFoundError: LocalizedError, Sendable {
   }
 }
 
-enum GhosttyResponseError: Error, Sendable {
+enum GhosttyResponseError: LocalizedError, Sendable {
   case invalidListRecord(String)
   case invalidActionResult(String)
+
+  var errorDescription: String? {
+    switch self {
+    case .invalidListRecord:
+      "Ghostty returned invalid terminal metadata."
+    case .invalidActionResult:
+      "Ghostty returned an invalid action result."
+    }
+  }
 }

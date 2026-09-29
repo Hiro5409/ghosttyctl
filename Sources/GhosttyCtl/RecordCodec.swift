@@ -33,10 +33,11 @@ enum RecordCodec {
       .split(separator: "\t", omittingEmptySubsequences: false)
       .map { unescape(String($0)) }
 
-    guard fields.count == 10,
+    guard fields.count == 12,
       let tabIndex = Int(fields[4]),
       let tabSelected = Bool(fields[5]),
-      let focused = Bool(fields[9])
+      let pid = Int(fields[9]),
+      let focused = Bool(fields[11])
     else {
       throw GhosttyResponseError.invalidListRecord(String(line))
     }
@@ -51,6 +52,8 @@ enum RecordCodec {
       terminalID: fields[6],
       terminalName: fields[7],
       workingDirectory: fields[8],
+      pid: pid,
+      tty: fields[10],
       focused: focused
     )
   }
