@@ -116,10 +116,10 @@ struct TypeCommand: AsyncParsableCommand {
 struct CloseCommand: AsyncParsableCommand {
   static let configuration = CommandConfiguration(
     commandName: "close",
-    abstract: "Close a terminal by stable ID."
+    abstract: "Close a terminal without confirmation by stable ID."
   )
 
-  @Option(help: "Stable terminal ID to close.")
+  @Option(help: "Stable terminal ID to close without confirmation.")
   var terminal: String
 
   mutating func run() async throws {

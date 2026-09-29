@@ -59,7 +59,7 @@ ghosttyctl perform-action toggle_fullscreen --terminal TERMINAL_ID
 `list` reports the current foreground process ID and local TTY for each
 terminal. These values identify local processes and can change while a terminal
 is running; they do not expose terminal output or processes beyond an SSH
-connection.
+connection. A process ID of `0` or an empty TTY means the value is unavailable.
 
 `type` reads UTF-8 from standard input. `--enter` sends an Enter key after the
 text and can start a terminal process. Successful delivery does not report the
@@ -82,14 +82,17 @@ with status 1. The stable `error.code` is intended for automation:
 }
 ```
 
-`close` requires a stable terminal ID. The CLI does not read terminal screen
-contents or expose first-class quit, raw-key, or mouse subcommands.
-`perform-action` is an explicit escape hatch and can invoke state-changing or
-destructive Ghostty actions. Only `focus` brings Ghostty to the front; other
-commands leave the current application active.
+`close` requires a stable terminal ID and closes without confirmation. The CLI
+does not read terminal screen contents or expose first-class quit, raw-key, or
+mouse subcommands. `perform-action` is an explicit escape hatch and can invoke
+state-changing or destructive Ghostty actions.
 
-Ghostty documents AppleScript as a preview feature. The CLI targets the
-scripting dictionary shipped by Ghostty tip.
+`focus` and `new-tab` bring Ghostty to the front. Starting Ghostty can also
+bring it to the front when the first window is created. `perform-action`
+activation depends on the selected action; other current commands do not
+explicitly activate Ghostty.
+
+The CLI targets the scripting dictionary shipped by Ghostty tip.
 
 ## Development
 
