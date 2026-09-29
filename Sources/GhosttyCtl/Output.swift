@@ -6,6 +6,7 @@ enum CLIErrorCode: String, Encodable {
   case ghosttyNotFound = "ghostty_not_found"
   case appleScriptFailed = "applescript_failed"
   case invalidResponse = "invalid_response"
+  case captureFailed = "capture_failed"
   case unexpected = "unexpected_error"
 }
 
@@ -41,6 +42,10 @@ enum Output {
     file.write(Data(text.utf8))
     guard !text.hasSuffix("\n") else { return }
     file.write(Data("\n".utf8))
+  }
+
+  static func writeRaw(_ text: String) {
+    FileHandle.standardOutput.write(Data(text.utf8))
   }
 
   private static func encoded<Value: Encodable>(_ value: Value) throws -> Data {

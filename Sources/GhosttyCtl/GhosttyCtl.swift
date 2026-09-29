@@ -7,14 +7,24 @@ struct GhosttyCtl: AsyncParsableCommand {
   static let configuration = CommandConfiguration(
     commandName: "ghosttyctl",
     abstract: "Inspect and control a running Ghostty instance.",
-    version: "0.2.0",
+    version: "0.3.0",
     subcommands: [
       ListCommand.self,
+      NewWindowCommand.self,
       NewTabCommand.self,
       SplitCommand.self,
       FocusCommand.self,
+      SetTitleCommand.self,
       TypeCommand.self,
       CloseCommand.self,
+      ReloadConfigCommand.self,
+      UndoCommand.self,
+      RedoCommand.self,
+      ResetCommand.self,
+      MoveTabCommand.self,
+      ResizeSplitCommand.self,
+      EqualizeSplitsCommand.self,
+      CaptureCommand.self,
       PerformActionCommand.self,
     ]
   )
@@ -51,6 +61,7 @@ struct GhosttyCtl: AsyncParsableCommand {
     case is GhosttyApplicationNotFoundError: return .ghosttyNotFound
     case is OSAScriptError: return .appleScriptFailed
     case is GhosttyResponseError: return .invalidResponse
+    case is CaptureError: return .captureFailed
     default: return .unexpected
     }
   }

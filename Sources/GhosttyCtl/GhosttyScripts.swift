@@ -110,6 +110,25 @@ enum GhosttyScripts {
     end run
     """#
 
+  static let newWindow = #"""
+    on run argv
+        set workingDirectory to item 1 of argv
+        set fieldSeparator to ASCII character 9
+        tell application "Ghostty"
+            if workingDirectory is "" then
+                set createdWindow to new window
+            else
+                set surfaceConfiguration to new surface configuration
+                set initial working directory of surfaceConfiguration to workingDirectory
+                set createdWindow to new window with configuration surfaceConfiguration
+            end if
+            set createdTab to selected tab of createdWindow
+            set createdTerminal to focused terminal of createdTab
+            return (id of createdWindow) & fieldSeparator & (id of createdTab) & fieldSeparator & (id of createdTerminal)
+        end tell
+    end run
+    """#
+
   static let split = #"""
     on run argv
         set terminalID to item 1 of argv
@@ -180,6 +199,37 @@ enum GhosttyScripts {
     end run
     """#
 
+  static let closeTab = #"""
+    on run argv
+        set tabID to item 1 of argv
+        tell application "Ghostty"
+            set targetTab to missing value
+            repeat with windowRef in windows
+                try
+                    set targetTab to first tab of windowRef whose id is tabID
+                    exit repeat
+                end try
+            end repeat
+            if targetTab is missing value then error "No tab found with ID " & tabID
+            set targetID to id of targetTab
+            close tab targetTab
+            return targetID
+        end tell
+    end run
+    """#
+
+  static let closeWindow = #"""
+    on run argv
+        set windowID to item 1 of argv
+        tell application "Ghostty"
+            set targetWindow to first window whose id is windowID
+            set targetID to id of targetWindow
+            close window targetWindow
+            return targetID
+        end tell
+    end run
+    """#
+
   static let performAction = #"""
     on run argv
         set terminalID to item 1 of argv
@@ -193,6 +243,68 @@ enum GhosttyScripts {
             end if
             set targetID to id of targetTerminal
             set wasPerformed to perform action actionText on targetTerminal
+            return targetID & fieldSeparator & (wasPerformed as text)
+        end tell
+    end run
+    """#
+
+  static let setTabTitle = #"""
+    on run argv
+        set tabID to item 1 of argv
+        set titleText to item 2 of argv
+        set fieldSeparator to ASCII character 9
+        tell application "Ghostty"
+            if tabID is "" then
+                set targetTab to selected tab of front window
+            else
+                set targetTab to missing value
+                repeat with windowRef in windows
+                    try
+                        set targetTab to first tab of windowRef whose id is tabID
+                        exit repeat
+                    end try
+                end repeat
+                if targetTab is missing value then error "No tab found with ID " & tabID
+            end if
+            set targetTerminal to focused terminal of targetTab
+            set targetID to id of targetTerminal
+            set wasPerformed to perform action ("set_tab_title:" & titleText) on targetTerminal
+            return targetID & fieldSeparator & (wasPerformed as text)
+        end tell
+    end run
+    """#
+
+  static let moveTab = #"""
+    on run argv
+        set tabID to item 1 of argv
+        set offsetText to item 2 of argv
+        set fieldSeparator to ASCII character 9
+        tell application "Ghostty"
+            set targetTab to missing value
+            set targetWindow to missing value
+            repeat with windowRef in windows
+                try
+                    set targetTab to first tab of windowRef whose id is tabID
+                    set targetWindow to windowRef
+                    exit repeat
+                end try
+            end repeat
+            if targetTab is missing value then error "No tab found with ID " & tabID
+
+            set originalTab to selected tab of targetWindow
+            set shouldRestoreSelection to id of originalTab is not tabID
+            if shouldRestoreSelection then select tab targetTab
+
+            try
+                set targetTerminal to focused terminal of targetTab
+                set targetID to id of targetTerminal
+                set wasPerformed to perform action ("move_tab:" & offsetText) on targetTerminal
+            on error errorMessage number errorNumber
+                if shouldRestoreSelection then select tab originalTab
+                error errorMessage number errorNumber
+            end try
+
+            if shouldRestoreSelection then select tab originalTab
             return targetID & fieldSeparator & (wasPerformed as text)
         end tell
     end run
