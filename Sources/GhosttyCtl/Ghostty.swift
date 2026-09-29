@@ -104,6 +104,15 @@ struct Ghostty: Sendable {
     return TerminalReference(terminalID: RecordCodec.identifier(from: output))
   }
 
+  func close(terminalID: String) async throws -> TerminalReference {
+    try await ensureRunning()
+    let output = try await executor.execute(
+      source: GhosttyScripts.close,
+      arguments: [terminalID]
+    )
+    return TerminalReference(terminalID: RecordCodec.identifier(from: output))
+  }
+
   func performAction(
     _ action: String,
     terminalID: String?

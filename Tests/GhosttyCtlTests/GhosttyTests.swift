@@ -34,6 +34,18 @@ struct GhosttyTests {
     #expect(!invocation.source.contains(action))
   }
 
+  @Test func closeTargetsExactlyTheRequestedTerminal() async throws {
+    let executor = RecordingAppleScriptExecutor(output: "terminal-1\n")
+    let ghostty = Ghostty(executor: executor)
+
+    let result = try await ghostty.close(terminalID: "terminal-1")
+    let invocation = try #require(await executor.invocations.first)
+
+    #expect(result == TerminalReference(terminalID: "terminal-1"))
+    #expect(invocation.arguments == ["terminal-1"])
+    #expect(invocation.source == GhosttyScripts.close)
+  }
+
   @Test func doesNotLaunchGhosttyWhenItIsAlreadyRunning() async throws {
     let launchState = LaunchState()
     let executor = RecordingAppleScriptExecutor(output: "terminal-1\n")

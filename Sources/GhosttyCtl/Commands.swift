@@ -20,7 +20,7 @@ struct ListCommand: AsyncParsableCommand {
     for terminal in terminals {
       let marker = terminal.focused ? "*" : " "
       print(
-        "\(marker) \(terminal.terminalID)  \(terminal.windowName) / \(terminal.tabName)  \(terminal.workingDirectory)"
+        "\(marker) \(terminal.terminalID)  pid=\(terminal.pid) tty=\(terminal.tty)  \(terminal.windowName) / \(terminal.tabName)  \(terminal.workingDirectory)"
       )
     }
   }
@@ -113,6 +113,21 @@ struct TypeCommand: AsyncParsableCommand {
   }
 }
 
+struct CloseCommand: AsyncParsableCommand {
+  static let configuration = CommandConfiguration(
+    commandName: "close",
+    abstract: "Close a terminal without confirmation by stable ID."
+  )
+
+  @Option(help: "Stable terminal ID to close without confirmation.")
+  var terminal: String
+
+  mutating func run() async throws {
+    let result = try await Ghostty().close(terminalID: terminal)
+    try Output.write(result)
+  }
+}
+
 struct PerformActionCommand: AsyncParsableCommand {
   static let configuration = CommandConfiguration(
     commandName: "perform-action",
@@ -135,16 +150,6 @@ struct PerformActionCommand: AsyncParsableCommand {
 }
 
 extension SplitDirection: ExpressibleByArgument {}
-
-private enum Output {
-  static func write<Value: Encodable>(_ value: Value) throws {
-    let encoder = JSONEncoder()
-    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-    let data = try encoder.encode(value)
-    FileHandle.standardOutput.write(data)
-    FileHandle.standardOutput.write(Data("\n".utf8))
-  }
-}
 
 extension String {
   fileprivate var expandingTildeInPath: String {

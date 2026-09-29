@@ -12,7 +12,7 @@ or the clipboard.
 ## Requirements
 
 - macOS 14 or later
-- Ghostty 1.3.1 or a compatible later build with AppleScript enabled
+- Ghostty tip with AppleScript enabled (`brew install --cask ghostty@tip`)
 - Xcode 26 or later with Swift 6.2 or later
 
 Commands launch Ghostty in the background when it is not already running. The
@@ -52,8 +52,14 @@ ghosttyctl focus TERMINAL_ID
 ghosttyctl type --terminal TERMINAL_ID --enter <<'GHOSTTY_INPUT'
 git status --short
 GHOSTTY_INPUT
+ghosttyctl close --terminal TERMINAL_ID
 ghosttyctl perform-action toggle_fullscreen --terminal TERMINAL_ID
 ```
+
+`list` reports the current foreground process ID and local TTY for each
+terminal. These values identify local processes and can change while a terminal
+is running; they do not expose terminal output or processes beyond an SSH
+connection. A process ID of `0` or an empty TTY means the value is unavailable.
 
 `type` reads UTF-8 from standard input. `--enter` sends an Enter key after the
 text and can start a terminal process. Successful delivery does not report the
@@ -63,14 +69,30 @@ AppleScript as process arguments rather than interpolated into source code.
 The executable uses Swift concurrency and the Swift project's `Subprocess`
 package for bounded, cancellable `osascript` execution.
 
-The CLI does not read terminal screen contents. It has no first-class close,
-quit, raw-key, or mouse subcommands. `perform-action` is an explicit escape
-hatch and can invoke state-changing or destructive Ghostty actions such as
-`close_surface`. Only `focus` brings Ghostty to the front; other commands leave
-the current application active.
+Failures are JSON objects on standard error. Invalid arguments and input exit
+with status 64; Ghostty, AppleScript, response, and unexpected failures exit
+with status 1. The stable `error.code` is intended for automation:
 
-Ghostty documents AppleScript as a preview feature. Compatibility is verified
-against the scripting dictionary for each supported Ghostty release.
+```json
+{
+  "error": {
+    "code": "invalid_arguments",
+    "message": "Missing expected argument '--terminal <terminal>'"
+  }
+}
+```
+
+`close` requires a stable terminal ID and closes without confirmation. The CLI
+does not read terminal screen contents or expose first-class quit, raw-key, or
+mouse subcommands. `perform-action` is an explicit escape hatch and can invoke
+state-changing or destructive Ghostty actions.
+
+`focus` and `new-tab` bring Ghostty to the front. Starting Ghostty can also
+bring it to the front when the first window is created. `perform-action`
+activation depends on the selected action; other current commands do not
+explicitly activate Ghostty.
+
+The CLI targets the scripting dictionary shipped by Ghostty tip.
 
 ## Development
 

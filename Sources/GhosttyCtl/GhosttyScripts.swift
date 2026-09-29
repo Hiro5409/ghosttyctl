@@ -58,7 +58,7 @@ enum GhosttyScripts {
                 set focusedID to (id of focused terminal of tabRef) as text
                 repeat with terminalRef in terminals of tabRef
                     set terminalID to (id of terminalRef) as text
-                    set fields to {my encodeField(windowID), my encodeField(windowName), my encodeField(tabID), my encodeField(tabName), tabIndex, tabSelected, my encodeField(terminalID), my encodeField(name of terminalRef), my encodeField(working directory of terminalRef), (terminalID is focusedID) as text}
+                    set fields to {my encodeField(windowID), my encodeField(windowName), my encodeField(tabID), my encodeField(tabName), tabIndex, tabSelected, my encodeField(terminalID), my encodeField(name of terminalRef), my encodeField(working directory of terminalRef), (pid of terminalRef) as text, my encodeField(tty of terminalRef), (terminalID is focusedID) as text}
                     set end of resultLines to my joinFields(fields)
                 end repeat
             end repeat
@@ -164,6 +164,18 @@ enum GhosttyScripts {
             set targetTerminal to first terminal whose id is terminalID
             focus targetTerminal
             return id of targetTerminal
+        end tell
+    end run
+    """#
+
+  static let close = #"""
+    on run argv
+        set terminalID to item 1 of argv
+        tell application "Ghostty"
+            set targetTerminal to first terminal whose id is terminalID
+            set targetID to id of targetTerminal
+            close targetTerminal
+            return targetID
         end tell
     end run
     """#
