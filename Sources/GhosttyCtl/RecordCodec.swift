@@ -14,6 +14,23 @@ enum RecordCodec {
     output.trimmingCharacters(in: .newlines)
   }
 
+  static func windowReference(from output: String) throws -> WindowReference {
+    let fields =
+      output
+      .trimmingCharacters(in: .newlines)
+      .split(separator: "\t", omittingEmptySubsequences: false)
+      .map(String.init)
+
+    guard fields.count == 3 else {
+      throw GhosttyResponseError.invalidWindowReference(output)
+    }
+    return WindowReference(
+      windowID: fields[0],
+      tabID: fields[1],
+      terminalID: fields[2]
+    )
+  }
+
   static func actionResult(from output: String) throws -> ActionResult {
     let fields =
       output

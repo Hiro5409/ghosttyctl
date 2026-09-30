@@ -1,10 +1,27 @@
 import Foundation
 import Testing
 
+@testable import GhosttyCtl
+
 @Suite("CLI")
 struct CLITests {
-  @Test func closeRequiresATerminalAndReportsAJSONError() throws {
-    let result = try runCLI(["close"])
+  @Test func moveTabAcceptsANegativeOffsetOption() throws {
+    let command = try MoveTabCommand.parse([
+      "--tab", "tab-1", "--offset", "-1",
+    ])
+
+    #expect(command.tab == "tab-1")
+    #expect(command.offset == -1)
+  }
+
+  @Test(
+    arguments: [
+      [],
+      ["--terminal", "terminal-1", "--tab", "tab-1"],
+    ]
+  )
+  func closeRequiresExactlyOneTarget(arguments: [String]) throws {
+    let result = try runCLI(["close"] + arguments)
     let response = try JSONDecoder().decode(
       ErrorResponse.self,
       from: Data(result.standardError.utf8)
@@ -13,7 +30,7 @@ struct CLITests {
     #expect(result.exitStatus == 64)
     #expect(result.standardOutput.isEmpty)
     #expect(response.error.code == "invalid_arguments")
-    #expect(response.error.message.contains("--terminal"))
+    #expect(response.error.message.contains("exactly one"))
   }
 }
 

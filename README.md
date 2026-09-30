@@ -6,8 +6,9 @@ controlling Ghostty through its AppleScript API.
 The command surface is intentionally narrow. It uses stable Ghostty object IDs,
 emits JSON for machine-driven workflows, and accepts terminal input through
 standard input. The CLI executes only `/usr/bin/osascript` as a subprocess, has
-no daemon or network access, and does not use Accessibility APIs, private APIs,
-or the clipboard.
+no daemon or network access, and does not use Accessibility APIs or private
+APIs. Terminal content capture briefly uses the general clipboard because
+Ghostty exposes captured file paths through that channel.
 
 ## Requirements
 
@@ -46,13 +47,27 @@ install -m 0755 .build/release/ghosttyctl "$HOME/.local/bin/ghosttyctl"
 
 ```sh
 ghosttyctl list --json
+ghosttyctl new-window --cwd ~/src/project
 ghosttyctl new-tab --window WINDOW_ID --cwd ~/src/project
 ghosttyctl split right --terminal TERMINAL_ID --cwd ~/src/project
 ghosttyctl focus TERMINAL_ID
+ghosttyctl set-title 'API server' --tab TAB_ID
 ghosttyctl type --terminal TERMINAL_ID --enter <<'GHOSTTY_INPUT'
 git status --short
 GHOSTTY_INPUT
 ghosttyctl close --terminal TERMINAL_ID
+ghosttyctl close --tab TAB_ID
+ghosttyctl close --window WINDOW_ID
+ghosttyctl move-tab --tab TAB_ID --offset -1
+ghosttyctl resize-split left 20 --terminal TERMINAL_ID
+ghosttyctl equalize-splits --terminal TERMINAL_ID
+ghosttyctl reload-config
+ghosttyctl reset --terminal TERMINAL_ID
+ghosttyctl undo
+ghosttyctl redo
+ghosttyctl capture screen --terminal TERMINAL_ID
+ghosttyctl capture scrollback --terminal TERMINAL_ID
+ghosttyctl capture selection --terminal TERMINAL_ID
 ghosttyctl perform-action toggle_fullscreen --terminal TERMINAL_ID
 ```
 
@@ -66,6 +81,21 @@ text and can start a terminal process. Successful delivery does not report the
 command's exit status or terminal output. Input and action values are passed to
 AppleScript as process arguments rather than interpolated into source code.
 
+`set-title` sets a persistent tab title override. An empty title clears the
+override. `move-tab` addresses the tab by stable ID and preserves the previously
+selected tab.
+
+`capture` writes UTF-8 terminal content directly to standard output. Ghostty
+creates a mode-0600 temporary file; the CLI accepts only its expected regular-
+file path shape inside the current user's temporary directory. When Ghostty is
+the only clipboard writer during capture, the CLI removes the file and its empty
+directory and restores all clipboard representations in their original order.
+When another write is observed, the captured file and path are left intact
+instead of restoring stale clipboard contents. An empty scope emits empty
+output. The scopes are the complete written buffer including scrollback
+(`screen`), scrollback history excluding the current screen (`scrollback`), and
+current selection.
+
 The executable uses Swift concurrency and the Swift project's `Subprocess`
 package for bounded, cancellable `osascript` execution.
 
@@ -77,20 +107,25 @@ with status 1. The stable `error.code` is intended for automation:
 {
   "error": {
     "code": "invalid_arguments",
-    "message": "Missing expected argument '--terminal <terminal>'"
+    "message": "Specify exactly one of --terminal, --tab, or --window."
   }
 }
 ```
 
-`close` requires a stable terminal ID and closes without confirmation. The CLI
-does not read terminal screen contents or expose first-class quit, raw-key, or
-mouse subcommands. `perform-action` is an explicit escape hatch and can invoke
-state-changing or destructive Ghostty actions.
+`close` requires exactly one stable terminal, tab, or window ID. Every scope
+disappears immediately without a confirmation dialog. Its processes can remain
+alive until Ghostty's undo timeout expires so the close can be undone. `undo`
+and `redo` operate on Ghostty's shared, time-limited macOS lifecycle history for
+windows, tabs, and splits; they are not target scoped and require a live
+terminal to dispatch the action. `reload-config` is also application-wide.
+`reset` can disrupt a running TUI. The CLI does not expose first-class quit,
+raw-key, or mouse subcommands. `perform-action` is an explicit escape hatch and
+can invoke state-changing or destructive Ghostty actions.
 
-`focus` and `new-tab` bring Ghostty to the front. Starting Ghostty can also
-bring it to the front when the first window is created. `perform-action`
-activation depends on the selected action; other current commands do not
-explicitly activate Ghostty.
+`focus`, `new-window`, and `new-tab` bring Ghostty to the front. Starting Ghostty
+can also bring it to the front when the first window is created.
+`perform-action` activation depends on the selected action; other current
+commands do not explicitly activate Ghostty.
 
 The CLI targets the scripting dictionary shipped by Ghostty tip.
 
