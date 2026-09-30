@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tagpr:
+    name: Prepare or publish release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # Create release commits, tags, and GitHub Releases.
+      issues: read # Read labels used to select the next semantic version.
+      pull-requests: write # Create and update release pull requests.
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Run tagpr
+        uses: Songmu/tagpr@967f2ab22be958948fb5bd439bfa3d404dd9dee8 # v1.21.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
