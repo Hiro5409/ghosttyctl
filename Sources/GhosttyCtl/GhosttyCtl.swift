@@ -7,7 +7,7 @@ struct GhosttyCtl: AsyncParsableCommand {
   static let configuration = CommandConfiguration(
     commandName: "ghosttyctl",
     abstract: "Inspect and control a running Ghostty instance.",
-    version: "0.3.0",
+    version: "0.3.1",
     subcommands: [
       ListCommand.self,
       NewWindowCommand.self,
