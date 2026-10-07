@@ -131,13 +131,32 @@ The CLI targets the scripting dictionary shipped by Ghostty tip.
 
 ## Development
 
-Select Xcode for command-line tools, install the pinned development tools with
-[mise](https://mise.jdx.dev/), then run the same checks as CI:
+[mise](https://mise.jdx.dev/) installs the pinned development tools, and
+Lefthook installs the Git hooks:
 
 ```sh
 mise install
+mise exec -- lefthook install
 mise run check
 ```
+
+`mise run check` runs the same code checks as CI: the tests, a release build, a
+`--version` smoke run, and the static checks. The tests need Xcode. When
+`xcode-select -p` names another developer directory, select Xcode for the shell
+that runs the checks and Git instead of changing the system default:
+
+```sh
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+```
+
+The pre-commit hook scans the staged changes for secrets and runs
+`mise run lint`. The pre-push hook runs `mise run check` and scans the committed
+history for secrets on every push, including a tag push. The hooks call mise
+themselves, so they work in a shell where mise is not activated.
+
+Swift Package Manager has no dependency audit command, so dependencies are
+checked on GitHub: Dependency Review checks each pull request, and Dependabot
+proposes updates.
 
 See the [Ghostty AppleScript documentation](https://ghostty.org/docs/features/applescript)
 for the underlying object model and action semantics.

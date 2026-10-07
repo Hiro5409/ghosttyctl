@@ -1,0 +1,21 @@
+# Git hooks run the Lefthook version pinned in mise.toml, whatever PATH Git inherits.
+lefthook: mise exec -- lefthook
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: secrets
+      run: mise exec -- gitleaks git --pre-commit --staged --no-banner --redact --verbose
+    - name: lint
+      run: mise run lint
+
+pre-push:
+  parallel: true
+  jobs:
+    # A script job runs on every push; a run job is skipped when the push carries no files, as a tag push does.
+    - name: check
+      script: check.sh
+      runner: sh
+    - name: secrets
+      script: secrets.sh
+      runner: sh
