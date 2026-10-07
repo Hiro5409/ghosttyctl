@@ -5,12 +5,15 @@ on:
     branches:
       - main
   pull_request:
+  # The Release workflow runs these jobs against a pushed tag.
+  workflow_call:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # A called workflow reports its caller as github.workflow, so the group names this workflow itself.
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -32,6 +35,14 @@ jobs:
         run: swift --version
       - name: Check
         run: mise run check
+      - name: Verify the tag names the built version
+        if: github.ref_type == 'tag'
+        run: |
+          version=$(.build/release/ghosttyctl --version)
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::$GITHUB_REF_NAME is not v$version, the tag for the version the executable reports."
+            exit 1
+          fi
 
   secrets:
     name: Scan secrets

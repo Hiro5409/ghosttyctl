@@ -161,6 +161,44 @@ proposes updates.
 See the [Ghostty AppleScript documentation](https://ghostty.org/docs/features/applescript)
 for the underlying object model and action semantics.
 
+## Release
+
+A maintainer releases from `main`: set `version` in
+`Sources/GhosttyCtl/GhosttyCtl.swift`, merge that change, then push an annotated
+tag for that version from the merged commit:
+
+```sh
+git tag -a v1.2.3 --cleanup=verbatim -F - <<'NOTES'
+## Changes
+
+- Describe a change a user will notice.
+NOTES
+git push origin v1.2.3
+```
+
+The tag message becomes the GitHub release notes. Git reads it from standard
+input, and `--cleanup=verbatim` keeps lines that start with `#`, such as
+Markdown headings, which Git otherwise strips as comments.
+
+The tag starts the Release workflow, which verifies that the tag is annotated
+and belongs to `main`, runs CI on the tagged commit, verifies that the built
+executable reports the tagged version, and then publishes an immutable GitHub
+release without assets. Homebrew builds from the tag, so the formula in
+[Hiro5409/homebrew-tap](https://github.com/Hiro5409/homebrew-tap) moves to the
+new tag separately.
+
+To retry a failed run, re-run its failed jobs; a release already published for
+the same commit passes. A tag that fails verification has no release, so delete
+it, fix the cause, and push it again:
+
+```sh
+git push --delete origin v1.2.3
+git tag --delete v1.2.3
+```
+
+A published release locks its tag, so a new version corrects a published
+release.
+
 ## License
 
 [MIT](LICENSE). This project is not affiliated with or endorsed by the Ghostty

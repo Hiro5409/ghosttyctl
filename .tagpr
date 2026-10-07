@@ -1,5 +1,0 @@
-[tagpr]
-    releaseBranch = main
-    versionFile = Sources/GhosttyCtl/GhosttyCtl.swift
-    vPrefix = true
-    changelog = false
