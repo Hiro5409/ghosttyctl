@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Verify the release tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify the tag
+        run: |
+          if [ "$(git cat-file -t "$GITHUB_REF")" != tag ]; then
+            echo "::error::$GITHUB_REF_NAME is not an annotated tag, so it has no message for the release notes."
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::The tagged commit is not on main."
+            exit 1
+          fi
+
+  # CI also verifies that the built executable reports the tagged version.
+  check:
+    name: Check
+    needs: validate
+    permissions:
+      contents: read
+    # actionlint rejects the `$/` self-repository form; both forms run the caller's commit.
+    uses: ./.github/workflows/ci.yml # zizmor: ignore[self-repository]
+
+  release:
+    name: Create GitHub release
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write # Create the release.
+    steps:
+      # gh reads the release notes from the local tag.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # A run can fail after gh has published the release, so a retry passes when a
+          # published immutable release exists and its attestation names this run's commit.
+          # The attestation records the tag object, which the local tag resolves to a commit.
+          # In any other case gh creates the release, and fails when the tag already has one.
+          if [ "$(gh release view "$GITHUB_REF_NAME" --json isDraft,isImmutable --jq '.isImmutable and (.isDraft | not)')" = true ]; then
+            attested=$(gh release verify "$GITHUB_REF_NAME" --format json --jq '.verificationResult.statement.subject[].digest.sha1 | values')
+            if [ "$(git rev-parse "$attested^{commit}")" = "$GITHUB_SHA" ]; then
+              exit 0
+            fi
+          fi
+          gh release create "$GITHUB_REF_NAME" --verify-tag --notes-from-tag --title "$GITHUB_REF_NAME"

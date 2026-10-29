@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  # The Release workflow runs these jobs against a pushed tag.
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  # A called workflow reports its caller as github.workflow, so the group names this workflow itself.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Check
+    runs-on: macos-26
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Select Xcode 26.6
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app/Contents/Developer
+      - name: Install development tools
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          version: 2026.9.4
+      - name: Show Swift version
+        run: swift --version
+      - name: Check
+        run: mise run check
+      - name: Verify the tag names the built version
+        if: github.ref_type == 'tag'
+        run: |
+          version=$(.build/release/ghosttyctl --version)
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::$GITHUB_REF_NAME is not v$version, the tag for the version the executable reports."
+            exit 1
+          fi
+
+  secrets:
+    name: Scan secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install development tools
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          version: 2026.9.4
+          install_args: gitleaks
+      - name: Scan git history for secrets
+        run: mise run --skip-tools secrets
